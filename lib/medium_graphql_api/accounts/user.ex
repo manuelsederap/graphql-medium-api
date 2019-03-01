@@ -17,7 +17,7 @@ defmodule MediumGraphqlApi.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:first_name, :last_name, :email, :password, :password_hash, :role])
+    |> cast(attrs, [:first_name, :last_name, :email, :password, :password_confirmation, :role])
     |> validate_required([
       :first_name,
       :last_name,
@@ -27,10 +27,15 @@ defmodule MediumGraphqlApi.Accounts.User do
       :role
     ])
     |> validate_format(:email, ~r/@/)
+    |> update_change(:email, &String.downcase(&1))
     |> validate_length(:password, min: 6, max: 20)
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> hash_password
+  end
+
+  defp hash_password(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
+    change(changeset, Comeonin.Argon2.add_hash(password))
   end
 
   defp hash_password(changeset) do
